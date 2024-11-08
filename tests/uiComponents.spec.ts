@@ -1,5 +1,4 @@
 import {test, expect} from '@playwright/test'
-import { delay } from 'rxjs-compat/operator/delay'
 
 test.beforeEach(async({page}) => {
     await page.goto('http://localhost:4200/')
@@ -321,3 +320,52 @@ test.describe('Dialog Boxes', () => {
     })
 
 })
+
+
+test.describe('Web tabbles', () => {
+    test.beforeEach(async({page}) => {
+        await page.getByText('Tables & Data').click()
+        await page.getByText('Smart Table').click()
+    })
+
+    test('Web tables part 1-2 learn', async({page}) => {
+        // 1-how to get row by any text in this row
+        const targetRow = page.getByRole('row', {name:"twitter@outlook.com"})
+        await targetRow.locator('.nb-edit').click()
+        //sometimes when you clicking to EDIT needed to create new locator with new params
+        await page.locator('input-editor').getByPlaceholder('Age').clear()
+        await page.locator('input-editor').getByPlaceholder('Age').fill('27')
+        await page.locator('.nb-checkmark').click()
+        // 2-get the row based on the value in the specific column
+        await page.locator('.ng2-smart-pagination-nav').getByText('2').click()
+        const targetRowById = page.getByRole('row', {name:"11"}).filter({has: page.locator('td').nth(1).getByText('11')})
+        await targetRowById.locator('.nb-edit').click()
+        await page.locator('input-editor').getByPlaceholder('E-mail').clear()
+        await page.locator('input-editor').getByPlaceholder('E-mail').fill('lekakz007@gmail.com')
+        await page.locator('.nb-checkmark').click()
+        await expect(targetRowById.locator('td').nth(5)).toHaveText('lekakz007@gmail.com')
+        // 3-test filter of the table
+        const ages = ["20", "30", "40", "200"]
+        for( let age of ages){
+            await page.locator('input-filter').getByPlaceholder('Age').clear()
+            await page.locator('input-filter').getByPlaceholder('Age').fill(age)
+            await page.waitForTimeout(500)
+            const ageRows = page.locator('tbody tr')
+            for(let row of await ageRows.all()){
+                const cellValue = await row.locator('td').last().textContent()
+                if(age == "200"){
+                    expect(await page.getByRole('table').textContent()).toContain('No data found')
+                } else {
+                    expect(cellValue).toEqual(age)
+                }
+                
+            }
+        }
+    })
+
+    test('Web tables mine', async({page}) => {
+        await page.close()
+    })
+
+})
+
