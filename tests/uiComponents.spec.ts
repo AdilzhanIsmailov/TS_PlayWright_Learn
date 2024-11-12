@@ -364,8 +364,112 @@ test.describe('Web tabbles', () => {
     })
 
     test('Web tables mine', async({page}) => {
-        await page.close()
+        const targetRow = page.getByRole('row', {name:"Ruben"})
+        await targetRow.locator('.nb-edit').click()
+        await page.locator('input-editor').getByPlaceholder('Username').clear()
+        await page.locator('input-editor').getByPlaceholder('Username').pressSequentially('LekakzTEST', {delay:75})
+        await page.locator('.nb-checkmark').click()
+        const targetRowNew = page.getByRole('row', {name:"Ruben"})
+        expect(await page.getByRole('table').textContent()).toContain('LekakzTES')
+        // await page.close()
     })
 
 })
 
+
+test.describe('Date Picker', () => {
+    test.beforeEach(async({page}) => {
+        await page.getByText('Forms').click()
+        await page.getByText('Datepicker').click()
+    })
+
+    test('Date Picker learn -- 1st HARDCODING method', async({page}) => {
+        const calendarInputField = page.getByPlaceholder('Form Picker')
+        await calendarInputField.click()
+        //first we need to pick specific LOCATOR that every number in needed month have(like class)
+        //and then we could find and pick any number by -- .getByText('2', {exact:true}) --to EXACT MATCH
+        await page.locator('[class="day-cell ng-star-inserted"]').getByText('1', {exact:true}).click()
+        await expect(calendarInputField).toHaveValue('Nov 1, 2024')
+    })
+
+    test('Date Picker learn -- 2nd JAVASCRIPT method', async({page}) => {
+        //this method needed to easily AUTO choose next day/week or any date
+        //we can use JAVASCRIPT date object to automate it
+        const calendarInputField = page.getByPlaceholder('Form Picker')
+        await calendarInputField.click()
+        // new is keyword for instance -- Date()is JS object
+        let date = new Date()
+        date.setDate(date.getDate() + 1) //find today's date and + 1
+        const expectedDate = date.getDate().toString() //what to put when clicking to number in calendar/date picker
+        const expectedMonthShort = date.toLocaleString('En-US', {month:'short'})
+        const expectedYear = date.getFullYear()
+        //now we need to put all data together in 1 CONST object
+        const dateToAssert = `${expectedMonthShort} ${expectedDate}, ${expectedYear}`
+        await page.locator('[class="day-cell ng-star-inserted"]').getByText(expectedDate, {exact:true}).click()
+        await expect(calendarInputField).toHaveValue(dateToAssert)
+    })
+
+    test('Date Picker learn -- 2nd JS method with MONTH change', async({page}) => {
+        //this method needed to easily AUTO choose next day/week or any date
+        //we can use JAVASCRIPT date object to automate it
+        const calendarInputField = page.getByPlaceholder('Form Picker')
+        await calendarInputField.click()
+        // new is keyword for instance -- Date()is JS object
+        let date = new Date()
+        date.setDate(date.getDate() + 9) //find today's date and + 1
+        const expectedDate = date.getDate().toString() //what to put when clicking to number in calendar/date picker
+        const expectedMonthShort = date.toLocaleString('En-US', {month:'short'})
+        const expectedMonthLong = date.toLocaleString('En-US', {month:'long'})
+        const expectedYear = date.getFullYear()
+        //now we need to put all data together in 1 CONST object
+        const dateToAssert = `${expectedMonthShort} ${expectedDate}, ${expectedYear}`
+        let calendarMonthAndYear = await page.locator('nb-calendar-view-mode').textContent()
+        const expectedMonthAndYear = ` ${expectedMonthLong} ${expectedYear}`
+        while(!calendarMonthAndYear.includes(expectedMonthAndYear)){
+            page.locator('nb-calendar-pageable-navigation [data-name="chevron-right"]').click()
+            calendarMonthAndYear = await page.locator('nb-calendar-view-mode').textContent()
+        }
+        await page.locator('[class="day-cell ng-star-inserted"]').getByText(expectedDate, {exact:true}).click()
+        await expect(calendarInputField).toHaveValue(dateToAssert)
+    })
+})
+
+test.describe('Sliders', () => {
+
+    test('Sliders learn - short way', async({page}) => {
+        const tempBox = page.locator('[tabtitle="Temperature"] ngx-temperature-dragger')
+        //Update attribute
+        const tempGauge = page.locator('[tabtitle="Temperature"] ngx-temperature-dragger circle')
+        await tempGauge.evaluate( node => {
+            node.setAttribute('cx', '229.051')
+            node.setAttribute('cy', '229.051')
+        })
+        await tempGauge.click()
+        await expect(tempBox).toContainText('30')
+    })
+    test('Sliders learn - long way MOUSE MOVEMENT', async({page}) => {
+        const tempBox = page.locator('[tabtitle="Temperature"] ngx-temperature-dragger')
+        await tempBox.scrollIntoViewIfNeeded()
+        const box = await tempBox.boundingBox()
+        const x = box.x + box.width / 2
+        const y = box.y + box.height / 2
+        await page.mouse.move(x, y)
+        await page.mouse.down()
+        await page.mouse.move(x+100, y)
+        await page.mouse.move(x+100, y+100)
+        await page.mouse.up()
+        await expect(tempBox).toContainText('30')
+    })
+
+    test('mine test', async({page}) => {
+        const tempBox = page.locator('[tabtitle="Temperature"] ngx-temperature-dragger')
+        const tempButton = page.locator('[tabtitle="Temperature"] ngx-temperature-dragger circle')
+        await tempButton.evaluate(node => {
+            node.setAttribute('cx', '266.17572185716875')
+            node.setAttribute('cy', '128.42217059048227')
+        })
+        await tempButton.click()
+        await expect(tempBox).toContainText('27  Celsius')
+    })
+
+})
